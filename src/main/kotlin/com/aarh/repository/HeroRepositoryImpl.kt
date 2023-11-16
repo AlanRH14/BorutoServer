@@ -111,7 +111,7 @@ class HeroRepositoryImpl : HeroRepository {
             heroes.forEach { (_, heroes) ->
                 heroes.forEach { hero ->
                     if (hero.name.lowercase().contains(query.lowercase())) {
-                       founded.add(hero)
+                        founded.add(hero)
                     }
                 }
             }
