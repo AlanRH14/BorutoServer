@@ -10,7 +10,7 @@ fun Application.configurationDefaultHeader() {
         val oneYearInSeconds = Duration.ofDays(365).seconds
         header(
             name = HttpHeaders.CacheControl,
-            value = "public, max-age=$oneYearInSeconds",
+            value = "public, max-age=$oneYearInSeconds, immutable",
         )
     }
 }
