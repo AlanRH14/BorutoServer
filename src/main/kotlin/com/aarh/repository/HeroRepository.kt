@@ -13,5 +13,5 @@ interface HeroRepository {
 
     suspend fun getAllHeroes(page: Int = 1): ApiResponse
 
-    suspend fun searchHeroes(name: String): ApiResponse
+    suspend fun searchHeroes(name: String?): ApiResponse
 }
