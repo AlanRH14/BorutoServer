@@ -27,7 +27,7 @@ fun Route.getAllHeroes() {
             call.respond(
                 message = ApiResponse(
                     success = false,
-                    message = "Only Numbers Allowed",
+                    message = "Only Numbers Allowed.",
                 ),
                 status = HttpStatusCode.BadRequest,
             )
@@ -35,7 +35,7 @@ fun Route.getAllHeroes() {
             call.respond(
                 message = ApiResponse(
                     success = false,
-                    message = "Heroes not Found",
+                    message = "Heroes not Found.",
                 ),
                 status = HttpStatusCode.NotFound,
             )

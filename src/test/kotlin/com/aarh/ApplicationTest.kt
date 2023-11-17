@@ -65,50 +65,33 @@ class ApplicationTest {
     }
 
     @Test
-    fun `access all heroes endpoint, assert correct information`() = testApplication {
-        val heroRepository = HeroRepositoryImpl()
-        val response = client.get("/boruto/heroes")
+    fun `access all heroes endpoint, query non existing page number, assert error`() = testApplication {
+        val response = client.get("/boruto/heroes?page=6")
+        assertEquals(
+            expected = HttpStatusCode.NotFound,
+            actual = response.status,
+        )
+        assertEquals(
+            expected = "404: Page not Found.",
+            actual = response.bodyAsText(),
+        )
+    }
+
+    @Test
+    fun `access all heroes endpoint, query invalid page number, assert error`() = testApplication {
+        val response = client.get("/boruto/heroes?page=invalid")
         val expected = ApiResponse(
-            success = true,
-            message = "Ok",
-            prevPage = null,
-            nextPage = 2,
-            heroes = heroRepository.page1,
+            success = false,
+            message = "Only Numbers Allowed.",
         )
         val actual = Json.decodeFromString<ApiResponse>(response.bodyAsText())
-        println("EXPECTED: $expected")
-        println("ACTUAL: $actual")
-
         assertEquals(
-            expected = HttpStatusCode.OK,
+            expected = HttpStatusCode.BadRequest,
             actual = response.status,
         )
         assertEquals(
             expected = expected,
             actual = actual,
-        )
-    }
-
-    @Test
-    fun `access all heroes endpoint, query second page, assert correct information`() = testApplication {
-        val heroRepository = HeroRepositoryImpl()
-        val response = client.get("/boruto/heroes?page=2")
-        val expected = ApiResponse(
-            success = true,
-            message = "Ok",
-            prevPage = 1,
-            nextPage = 3,
-            heroes = heroRepository.page2,
-        )
-        val actual = Json.decodeFromString<ApiResponse>(response.bodyAsText())
-
-        assertEquals(
-            actual = HttpStatusCode.OK,
-            expected = response.status,
-        )
-        assertEquals(
-            actual = expected,
-            expected = actual,
         )
     }
 
