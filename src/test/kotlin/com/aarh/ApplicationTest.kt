@@ -40,14 +40,15 @@ class ApplicationTest {
 
         pages.forEach { page ->
             val response = client.get("/boruto/heroes?page=$page")
+            val actual = Json.decodeFromString<ApiResponse>(response.bodyAsText())
             val expected = ApiResponse(
                 success = true,
                 message = "Ok",
                 prevPage = calculatePage(page = page)[PREVIOUS_PAGE_KEY],
                 nextPage = calculatePage(page = page)[NEXT_PAGE_KEY],
                 heroes = heroes[page - 1],
+                lastUpdated = actual.lastUpdated,
             )
-            val actual = Json.decodeFromString<ApiResponse>(response.bodyAsText())
             println("CURRENT PAGE: $page")
             println("PREVIOUS PAGE: ${calculatePage(page)[PREVIOUS_PAGE_KEY]}")
             println("NEXT PAGE: ${calculatePage(page)[NEXT_PAGE_KEY]}")
