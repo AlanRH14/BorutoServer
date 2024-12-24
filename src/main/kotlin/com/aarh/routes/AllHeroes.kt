@@ -3,15 +3,14 @@ package com.aarh.routes
 import com.aarh.models.ApiResponse
 import com.aarh.repository.HeroRepository
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import org.koin.ktor.ext.inject
+import org.koin.java.KoinJavaComponent.inject
 import java.lang.IllegalArgumentException
 import java.lang.NumberFormatException
 
 fun Route.getAllHeroes() {
-    val heroRepository: HeroRepository by inject()
+    val heroRepository: HeroRepository by inject(HeroRepository::class.java)
 
     get("/boruto/heroes") {
         try {
