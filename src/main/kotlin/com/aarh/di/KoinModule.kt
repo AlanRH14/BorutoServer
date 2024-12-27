@@ -7,8 +7,5 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 val koinModule = module {
-    /*single<HeroRepository> {
-        HeroRepositoryImpl()
-    }*/
     singleOf(::HeroRepositoryImpl) { bind<HeroRepository>() }
 }

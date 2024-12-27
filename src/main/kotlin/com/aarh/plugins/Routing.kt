@@ -12,6 +12,8 @@ fun Application.configureRouting() {
         root()
         getAllHeroes()
         searchHeroes()
-        staticResources(remotePath = "/", basePackage = "", index = "image")
+        staticResources(remotePath = "/", basePackage = "", index = "image") {
+            enableAutoHeadResponse()
+        }
     }
 }

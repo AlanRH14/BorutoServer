@@ -2,7 +2,7 @@
 kotlin-version = "2.1.0"
 ktor-version = "3.0.2"
 logback-version = "1.4.14"
-koin-bom = "4.1.0-Beta1"
+koin-bom = "4.0.0"
 
 [libraries]
 ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation-jvm", version.ref = "ktor-version" }
