@@ -28,18 +28,9 @@ dependencies {
     implementation(libs.logback.classic)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
-
     implementation(project.dependencies.platform(libs.koin.bom))
     implementation(libs.koin.core)
-
     implementation(libs.ktor.server.defaultheaders)
     implementation(libs.koin.logger.slf4j)
-
     implementation(libs.ktor.server.status.pages)
-
-    /*implementation("io.insert-koin:koin-ktor:$koinVersion")
-    implementation("io.insert-koin:koin-logger-slf4j:$koinVersion")
-
-    implementation("io.ktor:ktor-server-default-c:$ktorVersion")
-    implementation("io.ktor:ktor-server-status-pages:$ktorVersion")*/
 }
