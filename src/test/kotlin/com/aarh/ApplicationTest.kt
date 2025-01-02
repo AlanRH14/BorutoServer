@@ -9,11 +9,15 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
 import kotlinx.serialization.json.Json
+import org.koin.core.context.stopKoin
 import kotlin.test.*
 
 class ApplicationTest {
     @Test
     fun `access root endpoint, assert correct information`() = testApplication {
+        application {
+            module()
+        }
         val response = client.get("/")
 
         assertEquals(
@@ -28,6 +32,9 @@ class ApplicationTest {
 
     @Test
     fun `access all heroes endpoint, query all pages, assert correct information`() = testApplication {
+        application {
+            module()
+        }
         val heroRepository = HeroRepositoryImpl()
         val pages = 1..5
         val heroes = listOf(
@@ -67,6 +74,9 @@ class ApplicationTest {
 
     @Test
     fun `access all heroes endpoint, query non existing page number, assert error`() = testApplication {
+        application {
+            module()
+        }
         val response = client.get("/boruto/heroes?page=6")
         assertEquals(
             expected = HttpStatusCode.NotFound,
@@ -80,6 +90,9 @@ class ApplicationTest {
 
     @Test
     fun `access all heroes endpoint, query invalid page number, assert error`() = testApplication {
+        application {
+            module()
+        }
         val response = client.get("/boruto/heroes?page=invalid")
         val expected = ApiResponse(
             success = false,
@@ -98,6 +111,9 @@ class ApplicationTest {
 
     @Test
     fun `assert search heroes endpoint, query hero name, assert single hero result`() = testApplication {
+        application {
+            module()
+        }
         val response = client.get("/boruto/hero/search?name=sas")
         val actual = Json.decodeFromString<ApiResponse>(response.bodyAsText()).heroes.size
 
@@ -113,6 +129,9 @@ class ApplicationTest {
 
     @Test
     fun `assert search heroes endpoint, query hero name, assert multiple heroes result`() = testApplication {
+        application {
+            module()
+        }
         val response = client.get("/boruto/hero/search?name=sa")
         val actual = Json.decodeFromString<ApiResponse>(response.bodyAsText()).heroes.size
 
@@ -128,6 +147,9 @@ class ApplicationTest {
 
     @Test
     fun `assert search heroes endpoint, query an empty text, assert empty list as a result`() = testApplication {
+        application {
+            module()
+        }
         val response = client.get("/boruto/hero/search?name=")
         val actual = Json.decodeFromString<ApiResponse>(response.bodyAsText()).heroes
 
@@ -143,6 +165,9 @@ class ApplicationTest {
 
     @Test
     fun `assert search heroes endpoint, query non existing hero, assert empty list as a result`() = testApplication {
+        application {
+            module()
+        }
         val response = client.get("/boruto/hero/search?name=unknown")
         val actual = Json.decodeFromString<ApiResponse>(response.bodyAsText()).heroes
 
@@ -158,6 +183,9 @@ class ApplicationTest {
 
     @Test
     fun `access non existing endpoint, assert not found`() = testApplication {
+        application {
+            module()
+        }
         val response = client.get("/unknown")
         assertEquals(
             expected = HttpStatusCode.NotFound,
@@ -193,5 +221,10 @@ class ApplicationTest {
             PREVIOUS_PAGE_KEY to prevPage,
             NEXT_PAGE_KEY to nextPage,
         )
+    }
+
+    @AfterTest
+    fun `after init`() {
+        stopKoin()
     }
 }
