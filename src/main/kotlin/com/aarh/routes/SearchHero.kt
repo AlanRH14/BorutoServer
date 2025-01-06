@@ -9,7 +9,7 @@ import org.koin.java.KoinJavaComponent.inject
 fun Route.searchHeroes() {
     val heroRepository: HeroRepository by inject(HeroRepository::class.java)
 
-    get("/boruto/hero/search") {
+    get("/boruto/heroes/search") {
         val name = call.request.queryParameters["name"]
         val apiResponse = heroRepository.searchHeroes(name = name)
 
