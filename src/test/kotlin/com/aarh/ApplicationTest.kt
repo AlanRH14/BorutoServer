@@ -114,7 +114,7 @@ class ApplicationTest {
         application {
             module()
         }
-        val response = client.get("/boruto/hero/search?name=sas")
+        val response = client.get("/boruto/heroes/search?name=sas")
         val actual = Json.decodeFromString<ApiResponse>(response.bodyAsText()).heroes.size
 
         assertEquals(
@@ -132,7 +132,7 @@ class ApplicationTest {
         application {
             module()
         }
-        val response = client.get("/boruto/hero/search?name=sa")
+        val response = client.get("/boruto/heroes/search?name=sa")
         val actual = Json.decodeFromString<ApiResponse>(response.bodyAsText()).heroes.size
 
         assertEquals(
@@ -150,7 +150,7 @@ class ApplicationTest {
         application {
             module()
         }
-        val response = client.get("/boruto/hero/search?name=")
+        val response = client.get("/boruto/heroes/search?name=")
         val actual = Json.decodeFromString<ApiResponse>(response.bodyAsText()).heroes
 
         assertEquals(
@@ -168,7 +168,7 @@ class ApplicationTest {
         application {
             module()
         }
-        val response = client.get("/boruto/hero/search?name=unknown")
+        val response = client.get("/boruto/heroes/search?name=unknown")
         val actual = Json.decodeFromString<ApiResponse>(response.bodyAsText()).heroes
 
         assertEquals(
