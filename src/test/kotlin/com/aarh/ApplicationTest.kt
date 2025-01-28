@@ -66,8 +66,8 @@ class ApplicationTest {
                 actual = response.status,
             )
             assertEquals(
-                expected = actual,
-                actual = expected,
+                expected = expected,
+                actual = actual,
             )
         }
     }
