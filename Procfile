@@ -1,1 +1,0 @@
-web: build/install/com.aarh.borutoserver/bin/com.aarh.borutoserver
