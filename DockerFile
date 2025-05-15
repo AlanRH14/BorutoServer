@@ -28,7 +28,7 @@ RUN apt-get update \
     && npx playwright install --with-deps chromium
 
 # Fetch the latest version of the borutoserver CLI
-RUN wget https://github.com/AlanRH14/BorutoServer-cli/releases/download/v${BORUTO_SERVER_CLI_VERSION}/borutoserver-${BORUTO_SERVER_CLI_VERSION}.zip \
+RUN wget https://github.com/varabyte/borutoserver-cli/releases/download/v${BORUTO_SERVER_CLI_VERSION}/borutoserver-${BORUTO_SERVER_CLI_VERSION}.zip \
     && unzip borutoserver-${BORUTO_SERVER_CLI_VERSION}.zip \
     && rm borutoserver-${BORUTO_SERVER_CLI_VERSION}.zip
 
