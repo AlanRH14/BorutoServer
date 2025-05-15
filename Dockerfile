@@ -53,4 +53,4 @@ ARG BORUTO_SERVER_APP_ROOT
 
 COPY --from=export /project/${BORUTO_SERVER_APP_ROOT}/.borutoserver .borutoserver
 
-ENTRYPOINT .borutoserver/server/start.sh
+ENTRYPOINT exec .borutoserver/server/start.sh
