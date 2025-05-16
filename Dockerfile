@@ -1,54 +1,56 @@
 #-----------------------------------------------------------------------------
-# Variables compartidas
-ARG APP_NAME="BorutoServer"
-ARG PORT=8080
-ARG GRADLE_VERSION=8.4
-ARG JAVA_VERSION=17
+# Variables shared across multiple stages (they need to be explicitly opted
+# into each stage by being declaring there too, but their values need only be
+# specified once).
+ARG BORUTO_SERVER_APP_ROOT="site"
 
 #-----------------------------------------------------------------------------
-# Etapa de construcción optimizada
-FROM gradle:${GRADLE_VERSION}-jdk${JAVA_VERSION}-alpine AS builder
+# Create an intermediate stage which builds and exports our site. In the
+# final stage, we'll only extract what we need from this stage, saving a lot
+# of space.
+FROM openjdk:11-jdk as export
 
-# Configuración de Gradle para entornos limitados
-RUN mkdir -p /home/gradle/.gradle && \
-    echo "org.gradle.jvmargs=-Xmx256m -XX:MaxMetaspaceSize=128m" > /home/gradle/.gradle/gradle.properties && \
-    echo "org.gradle.daemon=false" >> /home/gradle/.gradle/gradle.properties && \
-    echo "org.gradle.caching=true" >> /home/gradle/.gradle/gradle.properties
+ENV BORUTO_SERVER_CLI_VERSION=1.0.0
+ARG BORUTO_SERVER_APP_ROOT
 
-WORKDIR /app
+# Copy the project code to an arbitrary subdir so we can install stuff in the
+# Docker container root without worrying about clobbering project files.
+COPY . /project
 
-# 1. Copia solo los archivos necesarios para la resolución de dependencias
-COPY build.gradle.kts settings.gradle.kts gradle.properties /app/
-COPY gradle /app/gradle
+# Update and install required OS packages to continue
+# Note: Playwright is a system for running browsers, and here we use it to
+# install Chromium.
+RUN apt-get update \
+    && apt-get install -y curl gnupg unzip wget \
+    && curl -sL https://deb.nodesource.com/setup_19.x | bash - \
+    && apt-get install -y nodejs \
+    && npm init -y \
+    && npx playwright install --with-deps chromium
 
-# 2. Descarga dependencias primero (caché independiente)
-RUN gradle --no-daemon --stacktrace --info --refresh-dependencies dependencies
+# Fetch the latest version of the borutoserver CLI
+RUN wget https://github.com/varabyte/borutoserver-cli/releases/download/v${BORUTO_SERVER_CLI_VERSION}/borutoserver-${BORUTO_SERVER_CLI_VERSION}.zip \
+    && unzip borutoserver-${BORUTO_SERVER_CLI_VERSION}.zip \
+    && rm borutoserver-${BORUTO_SERVER_CLI_VERSION}.zip
 
-# 3. Copia el resto del código
-COPY src /app/src
+ENV PATH="/borutoserver-${BORUTO_SERVER_CLI_VERSION}/bin:${PATH}"
 
-# 4. Construye la aplicación
-RUN gradle --no-daemon --stacktrace --info build
+WORKDIR /project/${BORUTO_SERVER_APP_ROOT}
+
+# Decrease Gradle memory usage to avoid OOM situations in tight environments
+# (many free Cloud tiers only give you 512M of RAM). The following amount
+# should be more than enough to build and export our site.
+RUN mkdir ~/.gradle && \
+    echo "org.gradle.jvmargs=-Xmx256m" >> ~/.gradle/gradle.properties
+
+RUN borutoserver export --notty
 
 #-----------------------------------------------------------------------------
-# Etapa final ultra ligera
-FROM eclipse-temurin:${JAVA_VERSION}-jre-alpine
+# Create the final stage, which contains just enough bits to run the borutoserver
+# server.
+FROM openjdk:11-jre-slim as run
 
-ARG PORT
-ENV PORT=$PORT
+ARG BORUTO_SERVER_APP_ROOT
 
-WORKDIR /app
+COPY --from=export /project/${BORUTO_SERVER_APP_ROOT}/.borutoserver .borutoserver
 
-# Copia solo el JAR construido
-COPY --from=builder /app/build/libs/${APP_NAME}-*.jar ./app.jar
-
-# Configuración mínima para Ktor
-EXPOSE ${PORT}
-
-# Optimización para contenedores
-ENTRYPOINT ["java", \
-    "-XX:MaxRAMPercentage=75.0", \
-    "-XX:+UseContainerSupport", \
-    "-XX:+AlwaysActAsServerClassMachine", \
-    "-XX:+UseStringDeduplication", \
-    "-jar", "app.jar"]
+ENTRYPOINT exec .borutoserver/server/start.sh
