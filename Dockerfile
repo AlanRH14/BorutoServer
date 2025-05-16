@@ -2,7 +2,7 @@
 # Variables shared across multiple stages (they need to be explicitly opted
 # into each stage by being declaring there too, but their values need only be
 # specified once).
-ARG BORUTO_SERVER_APP_ROOT="site"
+ARG KOBWEB_APP_ROOT="site"
 
 #-----------------------------------------------------------------------------
 # Create an intermediate stage which builds and exports our site. In the
@@ -10,8 +10,8 @@ ARG BORUTO_SERVER_APP_ROOT="site"
 # of space.
 FROM openjdk:11-jdk as export
 
-ENV BORUTO_SERVER_CLI_VERSION=1.0.0
-ARG BORUTO_SERVER_APP_ROOT
+ENV KOBWEB_CLI_VERSION=0.9.12
+ARG KOBWEB_APP_ROOT
 
 # Copy the project code to an arbitrary subdir so we can install stuff in the
 # Docker container root without worrying about clobbering project files.
@@ -27,14 +27,14 @@ RUN apt-get update \
     && npm init -y \
     && npx playwright install --with-deps chromium
 
-# Fetch the latest version of the borutoserver CLI
-RUN wget https://github.com/varabyte/borutoserver-cli/releases/download/v${BORUTO_SERVER_CLI_VERSION}/borutoserver-${BORUTO_SERVER_CLI_VERSION}.zip \
-    && unzip borutoserver-${BORUTO_SERVER_CLI_VERSION}.zip \
-    && rm borutoserver-${BORUTO_SERVER_CLI_VERSION}.zip
+# Fetch the latest version of the Kobweb CLI
+RUN wget https://github.com/varabyte/kobweb-cli/releases/download/v${KOBWEB_CLI_VERSION}/kobweb-${KOBWEB_CLI_VERSION}.zip \
+    && unzip kobweb-${KOBWEB_CLI_VERSION}.zip \
+    && rm kobweb-${KOBWEB_CLI_VERSION}.zip
 
-ENV PATH="/borutoserver-${BORUTO_SERVER_CLI_VERSION}/bin:${PATH}"
+ENV PATH="/kobweb-${KOBWEB_CLI_VERSION}/bin:${PATH}"
 
-WORKDIR /project/${BORUTO_SERVER_APP_ROOT}
+WORKDIR /project/${KOBWEB_APP_ROOT}
 
 # Decrease Gradle memory usage to avoid OOM situations in tight environments
 # (many free Cloud tiers only give you 512M of RAM). The following amount
@@ -42,15 +42,15 @@ WORKDIR /project/${BORUTO_SERVER_APP_ROOT}
 RUN mkdir ~/.gradle && \
     echo "org.gradle.jvmargs=-Xmx256m" >> ~/.gradle/gradle.properties
 
-RUN borutoserver export --notty
+RUN kobweb export --notty
 
 #-----------------------------------------------------------------------------
-# Create the final stage, which contains just enough bits to run the borutoserver
+# Create the final stage, which contains just enough bits to run the Kobweb
 # server.
 FROM openjdk:11-jre-slim as run
 
-ARG BORUTO_SERVER_APP_ROOT
+ARG KOBWEB_APP_ROOT
 
-COPY --from=export /project/${BORUTO_SERVER_APP_ROOT}/.borutoserver .borutoserver
+COPY --from=export /project/${KOBWEB_APP_ROOT}/.kobweb .kobweb
 
-ENTRYPOINT exec .borutoserver/server/start.sh
+ENTRYPOINT exec .kobweb/server/start.sh
