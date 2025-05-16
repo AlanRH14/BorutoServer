@@ -1,67 +1,56 @@
 #-----------------------------------------------------------------------------
-# Variables compartidas entre etapas
-ARG APP_NAME="BorutoServer"
-ARG PORT=8080
-ARG GRADLE_VERSION=8.4
-ARG JAVA_VERSION=17
+# Variables shared across multiple stages (they need to be explicitly opted
+# into each stage by being declaring there too, but their values need only be
+# specified once).
+ARG BORUTO_SERVER_APP_ROOT="site"
 
 #-----------------------------------------------------------------------------
-# Etapa de construcción (Gradle con cache)
-FROM gradle:${GRADLE_VERSION}-jdk${JAVA_VERSION}-alpine AS builder
+# Create an intermediate stage which builds and exports our site. In the
+# final stage, we'll only extract what we need from this stage, saving a lot
+# of space.
+FROM openjdk:11-jdk as export
 
-ARG APP_NAME
-ARG PORT
-ENV PORT=$PORT
+ENV BORUTO_SERVER_CLI_VERSION=1.0.0
+ARG BORUTO_SERVER_APP_ROOT
 
-# Configuración de Gradle para entornos limitados
-RUN mkdir -p /home/gradle/.gradle && \
-    echo "org.gradle.jvmargs=-Xmx256m -XX:MaxMetaspaceSize=128m" > /home/gradle/.gradle/gradle.properties && \
-    echo "org.gradle.daemon=false" >> /home/gradle/.gradle/gradle.properties && \
-    echo "org.gradle.caching=true" >> /home/gradle/.gradle/gradle.properties
+# Copy the project code to an arbitrary subdir so we can install stuff in the
+# Docker container root without worrying about clobbering project files.
+COPY . /project
 
-WORKDIR /app
+# Update and install required OS packages to continue
+# Note: Playwright is a system for running browsers, and here we use it to
+# install Chromium.
+RUN apt-get update \
+    && apt-get install -y curl gnupg unzip wget \
+    && curl -sL https://deb.nodesource.com/setup_19.x | bash - \
+    && apt-get install -y nodejs \
+    && npm init -y \
+    && npx playwright install --with-deps chromium
 
-# Copia solo los archivos necesarios para construir las dependencias
-COPY build.gradle.kts settings.gradle.kts gradle.properties /app/
-COPY gradle /app/gradle
-RUN gradle --no-daemon dependencies
+# Fetch the latest version of the borutoserver CLI
+RUN wget https://github.com/varabyte/borutoserver-cli/releases/download/v${BORUTO_SERVER_CLI_VERSION}/borutoserver-${BORUTO_SERVER_CLI_VERSION}.zip \
+    && unzip borutoserver-${BORUTO_SERVER_CLI_VERSION}.zip \
+    && rm borutoserver-${BORUTO_SERVER_CLI_VERSION}.zip
 
-# Copia el resto del código fuente
-COPY src /app/src
+ENV PATH="/borutoserver-${BORUTO_SERVER_CLI_VERSION}/bin:${PATH}"
 
-# Construye la aplicación
-RUN gradle --no-daemon build
+WORKDIR /project/${BORUTO_SERVER_APP_ROOT}
+
+# Decrease Gradle memory usage to avoid OOM situations in tight environments
+# (many free Cloud tiers only give you 512M of RAM). The following amount
+# should be more than enough to build and export our site.
+RUN mkdir ~/.gradle && \
+    echo "org.gradle.jvmargs=-Xmx256m" >> ~/.gradle/gradle.properties
+
+RUN borutoserver export --notty
 
 #-----------------------------------------------------------------------------
-# Etapa final (ejecución minimalista)
-FROM eclipse-temurin:${JAVA_VERSION}-jre-alpine
+# Create the final stage, which contains just enough bits to run the borutoserver
+# server.
+FROM openjdk:11-jre-slim as run
 
-ARG APP_NAME
-ARG PORT
-ENV PORT=$PORT
+ARG BORUTO_SERVER_APP_ROOT
 
-# Instala solo lo esencial para un servicio web
-RUN apk add --no-cache tzdata && \
-    cp /usr/share/zoneinfo/America/Mexico_City /etc/localtime && \
-    echo "America/Mexico_City" > /etc/timezone && \
-    apk del tzdata
+COPY --from=export /project/${BORUTO_SERVER_APP_ROOT}/.borutoserver .borutoserver
 
-WORKDIR /app
-
-# Copia el JAR construido y elimina metadatos innecesarios
-COPY --from=builder /app/build/libs/${APP_NAME}-*.jar ./app.jar
-RUN find /app -name "*.jar" -exec sh -c 'exec strip --strip-debug "$0"' {} \;
-
-# Configuración de salud y métricas (opcional)
-HEALTHCHECK --interval=30s --timeout=3s \
-    CMD wget --quiet --tries=1 --spider http://localhost:${PORT}/health || exit 1
-
-EXPOSE ${PORT}
-
-# Ejecución optimizada para contenedores
-ENTRYPOINT ["java", \
-    "-XX:MaxRAMPercentage=75.0", \
-    "-XX:+UseContainerSupport", \
-    "-XX:+AlwaysActAsServerClassMachine", \
-    "-XX:+UseStringDeduplication", \
-    "-jar", "app.jar"]
+ENTRYPOINT exec .borutoserver/server/start.sh
