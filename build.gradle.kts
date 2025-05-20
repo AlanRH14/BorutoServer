@@ -37,10 +37,3 @@ dependencies {
     implementation(libs.koin.logger.slf4j)
     implementation(libs.ktor.server.status.pages)
 }
-
-ktor {
-    docker {
-        localImageName.set("boruto-docker-image")
-        imageTag.set("0.0.1-preview")
-    }
-}
