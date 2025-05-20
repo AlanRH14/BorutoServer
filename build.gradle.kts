@@ -14,6 +14,10 @@ application {
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
 }
 
+tasks.create("stage") {
+    dependsOn("installDist")
+}
+
 repositories {
     mavenCentral()
 }
@@ -34,14 +38,9 @@ dependencies {
     implementation(libs.ktor.server.status.pages)
 }
 
-tasks {
-    create("stage").dependsOn("installDist") // Para compatibilidad con Render
-    withType<Jar> {
-        manifest {
-            attributes["Main-Class"] = "com.example.ApplicationKt" // Cambia por tu clase principal
-        }
-        // Genera un "fat JAR" con todas las dependencias
-        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-        from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+ktor {
+    docker {
+        localImageName.set("boruto-docker-image")
+        imageTag.set("0.0.1-preview")
     }
 }
