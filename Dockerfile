@@ -1,10 +1,12 @@
-FROM gradle:7-jdk11 AS build
-COPY --chown=gradle:gradle . /home/gradle/src
-WORKDIR /home/gradle/src
-RUN gradle buildFatJar --no-daemon
+# Usamos imagen base de OpenJDK con Gradle
+FROM gradle:8.4-jdk17 AS build
+WORKDIR /app
+COPY . .
+RUN gradle build --no-daemon
 
-FROM openjdk:11
-EXPOSE 8080:8080
-RUN mkdir /app
-COPY --from=build /home/gradle/src/build/libs/*.jar /app/borutoserver.jar
-ENTRYPOINT ["java", "-jar", "*/app/borutoserver.jar*"]
+# Imagen final con JRE
+FROM eclipse-temurin:17-jre
+WORKDIR /app
+COPY --from=build /app/build/libs/*.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]
